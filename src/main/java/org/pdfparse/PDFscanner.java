@@ -3,9 +3,14 @@ package org.pdfparse;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.datatransfer.StringSelection;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import javax.swing.*;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -50,23 +55,49 @@ public class PDFscanner {
                 }
 
                 Path path = Paths.get(filePath);
+
                 File file = path.toFile();
 
-                if (!file.exists() || !file.isFile()) {
-                    JOptionPane.showMessageDialog(frame, "Указанный файл не существует или не является файлом.",
-                            "Ошибка", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
+                List<File> fileList = new ArrayList<>();
+                if (file.isDirectory()) {
+                    Arrays.stream(Objects.requireNonNull(file.listFiles())).forEach(f -> {
+                        if (f.getName().toLowerCase().endsWith(".pdf")) {
+                            fileList.add(f);
+                        }
+                    });
+                    if (fileList.isEmpty()) {
+                        JOptionPane.showMessageDialog(frame, "В указанной директории нет pdf файлов!",
+                                "Ошибка", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
 
-                if (!file.getName().toLowerCase().endsWith(".pdf")) {
-                    JOptionPane.showMessageDialog(frame, "Указанный файл не является PDF-файлом.",
-                            "Ошибка", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
+                } else {
+                    if (!file.exists() || !file.isFile()) {
+                        JOptionPane.showMessageDialog(frame, "Указанный файл не существует или не является файлом.",
+                                "Ошибка", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
 
-                int pageCount = countPagesInPDF(file);
-                JOptionPane.showMessageDialog(frame, "Количество страниц в PDF-файле: " + pageCount,
+                    if (!file.getName().toLowerCase().endsWith(".pdf")) {
+                        JOptionPane.showMessageDialog(frame, "Указанный файл не является PDF-файлом.",
+                                "Ошибка", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    fileList.add(file);
+                }
+                List<String> resultList = new ArrayList<>();
+                fileList.forEach(f -> {
+                    int pageCount = countPagesInPDF(f);
+                    resultList.add(f.getName() + ". Количество страниц в PDF-файле: " + pageCount);
+                });
+
+                String resultText = String.join("\n", resultList);
+                JOptionPane.showMessageDialog(frame, resultText,
                         "Результат", JOptionPane.INFORMATION_MESSAGE);
+
+                // Копируем результат в буфер обмена
+                StringSelection selection = new StringSelection(resultText);
+                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, null);
             }
         });
 
