@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.*;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -86,10 +87,14 @@ public class PDFscanner {
                     fileList.add(file);
                 }
                 List<String> resultList = new ArrayList<>();
+                AtomicInteger totalPdfPages = new AtomicInteger();
                 fileList.forEach(f -> {
                     int pageCount = countPagesInPDF(f);
+                    totalPdfPages.addAndGet(pageCount);
                     resultList.add(f.getName() + ". Количество страниц в PDF-файле: " + pageCount);
                 });
+                resultList.add("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+                resultList.add("Итого pdf-страниц: " + totalPdfPages.intValue());
 
                 String resultText = String.join("\n", resultList);
                 JOptionPane.showMessageDialog(frame, resultText,
