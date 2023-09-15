@@ -23,29 +23,58 @@ public class PDFscanner {
     }
 
     private static void createAndShowGUI() {
-        // Создаем главное окно
-        JFrame frame = new JFrame("PDF Scanner");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(700, 200);
+        JFrame inputFrame = new JFrame("PDF Scanner - Введите путь к файлу или директории");
+        inputFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        inputFrame.setSize(700, 100);
 
-        // Создаем панель с компонентами
-        JPanel panel = new JPanel();
-        panel.setLayout(new BorderLayout());
+        // Панель для ввода пути
+        JPanel inputPanel = new JPanel();
+        inputPanel.setLayout(new BorderLayout());
 
-        // Создаем текстовое поле для ввода пути
+        // Текстовое поле для ввода пути
         JTextField textField = new JTextField();
-        textField.setBackground(Color.ORANGE);
-        panel.add(textField, BorderLayout.CENTER);
+        inputPanel.add(textField, BorderLayout.CENTER);
 
-        // Создаем кнопку для подтверждения ввода
-        JButton button = new JButton("Сканировать");
-        button.setBackground(Color.lightGray);
-        panel.add(button, BorderLayout.SOUTH);
+        // Кнопка для подтверждения ввода
+        JButton scanButton = new JButton("Сканировать");
+        inputPanel.add(scanButton, BorderLayout.SOUTH);
 
+        inputFrame.add(inputPanel);
+        inputFrame.setVisible(true);
+
+        // Создаем окно для вывода результата
+        JFrame resultFrame = new JFrame("Результат");
+        resultFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        resultFrame.setSize(700, 200);
+
+        // Создаем кнопку "Скопировать"
+        JButton copyButton = new JButton("Скопировать");
+        resultFrame.add(copyButton, BorderLayout.SOUTH);
+
+
+
+        // Панель для вывода результата
+        JPanel resultPanel = new JPanel();
+        resultPanel.setLayout(new BorderLayout());
+
+        // Текстовая область для вывода результата
+        JTextArea textArea = new JTextArea(10, 40);
+        textArea.setEditable(false);
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        resultPanel.add(scrollPane, BorderLayout.CENTER);
+
+        resultFrame.add(resultPanel);
+        resultFrame.setVisible(false);
         // Добавляем слушатель событий для кнопки
-        button.addActionListener(new ActionListener() {
+        scanButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                System.out.println("~~~~~ " + inputFrame.getX() + " " + inputPanel.getY());
+
+                resultFrame.setLocation(inputFrame.getX(), inputPanel.getY() + 70);
+
+                textArea.setText("");
+
                 String filePath = textField.getText().trim();
                 if (filePath.equalsIgnoreCase("exit")) {
                     System.exit(0); // Выход из программы при вводе "exit"
@@ -67,20 +96,20 @@ public class PDFscanner {
                         }
                     });
                     if (fileList.isEmpty()) {
-                        JOptionPane.showMessageDialog(frame, "В указанной директории нет pdf файлов!",
+                        JOptionPane.showMessageDialog(inputFrame, "В указанной директории нет pdf файлов!",
                                 "Ошибка", JOptionPane.ERROR_MESSAGE);
                         return;
                     }
 
                 } else {
                     if (!file.exists() || !file.isFile()) {
-                        JOptionPane.showMessageDialog(frame, "Указанный файл не существует или не является файлом.",
+                        JOptionPane.showMessageDialog(inputFrame, "Указанный файл не существует или не является файлом.",
                                 "Ошибка", JOptionPane.ERROR_MESSAGE);
                         return;
                     }
 
                     if (!file.getName().toLowerCase().endsWith(".pdf")) {
-                        JOptionPane.showMessageDialog(frame, "Указанный файл не является PDF-файлом.",
+                        JOptionPane.showMessageDialog(inputFrame, "Указанный файл не является PDF-файлом.",
                                 "Ошибка", JOptionPane.ERROR_MESSAGE);
                         return;
                     }
@@ -96,20 +125,35 @@ public class PDFscanner {
                 resultList.add("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
                 resultList.add("Итого pdf-страниц: " + totalPdfPages.intValue());
 
-                String resultText = String.join("\n", resultList);
-                JOptionPane.showMessageDialog(frame, resultText,
-                        "Результат", JOptionPane.INFORMATION_MESSAGE);
+                // Обновляем текстовую область с результатами
+                StringBuilder resultText = new StringBuilder();
+                resultList.forEach(result -> {
+                    resultText.append(result).append("\n");
+                    textArea.append(result + "\n");
+                });
 
-                // Копируем результат в буфер обмена
+                resultFrame.setVisible(true);
+            }
+        });
+        copyButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String resultText = textArea.getText();
                 StringSelection selection = new StringSelection(resultText);
                 Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, null);
+                JOptionPane.showMessageDialog(resultFrame, "Результат скопирован в буфер обмена", "Скопировано", JOptionPane.INFORMATION_MESSAGE);
             }
         });
 
+
         // Добавляем панель на окно и делаем окно видимым
-        frame.add(panel);
-        frame.setVisible(true);
+        resultFrame.add(resultPanel);
+        resultPanel.setVisible(true);
+
+
     }
+
+
 
     private static int countPagesInPDF(File file) {
         try (PDDocument document = PDDocument.load(file)) {
